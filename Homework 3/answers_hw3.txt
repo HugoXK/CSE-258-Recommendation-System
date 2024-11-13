@@ -1,0 +1,1 @@
+{'Q1': 0.6842, 'Q2': [0.68, 0.7056], 'Q3': 0.6688, 'Q4': 0.6692, 'Q5': 'I confirm that I have uploaded an assignment submission to gradescope', 'Q6': 3.012, 'Q7': [5.8266, -3.0066, 5.3609, -2.9435], 'Q8': (1.5, 1.0115)}

@@ -1,0 +1,67 @@
+############################################## Would Played Prediction ##############################################
+This script provides a solution for predicting if a user would play a given game, leveraging a dataset of user-game interactions. The approach combines Jaccard similarity for user-game interactions and game popularity as features in several models, logistic regression, catBoost and XgBoost.
+
+#### Data Loading and Preprocessing
+- `readGz(path)`: Reads gzip compressed file line-by-line.
+- `readJSON(path)`: Yields user ID, game ID, and the full data line from a gzip file. Handles missing game IDs.
+- `allHours`: Accumulates all entries from the training dataset.
+- Training and validation split: The dataset is split into training (`hoursTrain`) and validation (`hoursValid`) sets.
+- `TrainSet`: Comprises both positive samples (actual games played by users) and negative samples (randomly chosen unplayed games).
+- `ValidSet`: Comprises both positive samples (actual games played by users) and negative samples (randomly chosen unplayed games).
+
+#### Baseline Model Components
+- `gameCount`: A dictionary to count occurrences of each game.
+- `totalPlayed`: Total count of played games.
+- `userPlayedGames`: Tracks games played by each user.
+- `mostPopular`: A sorted list of games based on their popularity.
+- `gamePopularity`: A dictionary mapping each game to its normalized popularity rank.
+
+#### Feature Engineering
+- `gameUsers`: A dictionary mapping each game to the set of users who played it.
+- `jaccard_similarity(set1, set2)`: Computes the Jaccard similarity between two sets.
+- `game_pair_similarities`: Precomputed Jaccard similarities for all game pairs.
+
+#### Model Training
+- Logistic regression model (`clf`) is trained using two features:
+  - Average Jaccard similarity of the target game with any game the user has previously played.
+  - Popularity of the game.
+- CatBoost model (sugusted by TA during the office hour) is trained with same features.
+- XgBoost model (sugusted by TA during the office hour) is trained with same features.
+
+#### Prediction and Output
+- The script reads a test file (`pairs_Played.csv`), extracts features for each user-game pair, and uses the trained models to make predictions.
+- Predictions are written to `predictions_Played.csv`.
+
+#### Further Feature Engineering (given as hints in the assignment doc and suggested by professor during the lecture)
+
+- Hint: The test set has been constructed such that exactly 50% of the pairs correspond to played games and the other 50% do not.
+- Method: adopt similar data preparation as before, but while doing feature engineering, various dictionaries and sets are created to keep track of games per user, frequency of games, and frequency of users. This helps in understanding user preferences and game popularity. Negative samples are generated for the validation set by randomly selecting games that each user has not played. This is crucial for evaluating the model's ability to distinguish between games a user would or would not play. Jaccard Similarity is also defined in the same way as before to measure the similarity between the sets of games played by different users, aiding in the prediction of whether a user might play a certain game based on the similarity to other users' game preferences. This time instead of calling any integrated model, I define my own model named UserGamePredictor, It uses both frequency-based and Jaccard similarity-based strategies: for Frequency-based Prediction, it determines if a game is among the top half of games played by the user, based on frequency; for Jaccard Similarity-based Prediction: Computes the maximum Jaccard similarity between the set of users who played the target game and the sets of users who played other games. A threshold is used to decide if the similarity is significant enough to predict that the user will play the game.
+The predictions from both strategies are combined to make a final prediction. And while doing Model Validation and Prediction, the model's accuracy is evaluated on the validation set, which includes both positive samples (games played by the user) and negative samples (games not played by the user). Finally, the model is used to make predictions on a test set, and the predictions are written to a file.
+
+############################################## Time Played Prediction ##############################################
+This script employs a collaborative filtering approach for predicting user-game interaction hours. It uses a regularized least squares optimization to compute user and game bias factors, aiming to minimize the Mean Squared Error (MSE) on the validation set.
+
+#### Data Preparation and Global Average Calculation
+- `trainHours`: Extracts transformed hours from the training data (`hoursTrain`).
+- `globalAverage`: Computes the average of `trainHours`, serving as the initial baseline prediction.
+
+#### Initialization of Key Data Structures
+- `hoursPerUserItem`: Stores the hours each user spent on each game.
+- `gamesPerUser`: Keeps track of the games each user has played.
+- `usersPerItem`: Records the users who have played each game.
+- `betaU` and `betaI`: Dictionaries to store user and item (game) biases respectively.
+
+#### Bias Calculation Function
+- `iterate(lamb)`: A function to iteratively update the global average (`alpha`), user biases (`betaU`), and item biases (`betaI`) using a given regularization parameter `lamb`.
+
+#### Regularization Parameter Tuning and Model Training
+- The script iterates over a range of `lamb` values to find the one that minimizes MSE on the validation set.
+- In each iteration:
+  - User and item biases are initialized to zero.
+  - `alpha` is reset to `globalAverage`.
+  - The `iterate` function is called repeatedly (100 times here) to update `alpha`, `betaU`, and `betaI`.
+  - The MSE for the validation set is computed and compared with the best MSE found so far.
+
+#### Results and Output
+- The script prints the MSE for each `lamb` value.
+- Determines and prints the best `lamb` (regularization parameter) and its corresponding lowest MSE.
